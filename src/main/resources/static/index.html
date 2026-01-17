@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride Application</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            width: 200px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="controls">
+        <h3>Simulator</h3>
+        <button onclick="simulateDriver()">Simulate Driver Movement</button>
+        <button onclick="requestRide()">Request Ride</button>
+        <div id="status"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([40.7128, -74.0060], 13); // NYC
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const driversLayer = L.layerGroup().addTo(map);
+        const ridesLayer = L.layerGroup().addTo(map);
+
+        let driverId = 1; // Demo driver ID
+        let currentLat = 40.7128;
+        let currentLon = -74.0060;
+
+        // Simulate driver moving randomly
+        function simulateDriver() {
+            currentLat += (Math.random() - 0.5) * 0.01;
+            currentLon += (Math.random() - 0.5) * 0.01;
+
+            fetch(`/v1/drivers/${driverId}/location`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ latitude: currentLat, longitude: currentLon })
+            }).then(() => {
+                document.getElementById('status').innerText = 'Driver moved';
+                updateMap();
+            });
+        }
+
+        // Initialize
+        setInterval(updateMap, 2000);
+
+        let currentRideId = null;
+
+        function requestRide() {
+            const pickupLat = 40.7128;
+            const pickupLon = -74.0060;
+            const dropoffLat = 40.7200;
+            const dropoffLon = -74.0100;
+
+            fetch('/v1/rides', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    riderId: 1, // Demo user
+                    pickupLat, pickupLon, dropoffLat, dropoffLon,
+                    paymentMethod: 'CARD'
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    currentRideId = data.id;
+                    document.getElementById('status').innerText = `Ride Requested: ${data.id}. Waiting for driver...`;
+                    L.marker([pickupLat, pickupLon], { color: 'green' }).addTo(ridesLayer).bindPopup('Pickup');
+                    L.marker([dropoffLat, dropoffLon], { color: 'red' }).addTo(ridesLayer).bindPopup('Dropoff');
+                    pollRideStatus();
+                })
+                .catch(err => console.error(err));
+        }
+
+        function pollRideStatus() {
+            if (!currentRideId) return;
+
+            fetch(`/v1/rides/${currentRideId}`)
+                .then(res => res.json())
+                .then(ride => {
+                    let statusText = `Ride #${ride.id}: ${ride.status}`;
+                    if (ride.driver) {
+                        statusText += ` <br><b>Allocated Driver: ${ride.driver.name} (ID: ${ride.driver.id})</b>`;
+                        // Visual feedback for allocation
+                        document.getElementById('status').style.backgroundColor = '#e6fffa';
+                        document.getElementById('status').style.border = '1px solid #4fd1c5';
+                    }
+                    document.getElementById('status').innerHTML = statusText;
+
+                    // Continue polling if not completed
+                    if (ride.status !== 'COMPLETED' && ride.status !== 'CANCELLED') {
+                        setTimeout(pollRideStatus, 2000);
+                    }
+                })
+                .catch(err => console.error("Error polling ride:", err));
+        }
+    </script>
+
+</body>
+
+</html>

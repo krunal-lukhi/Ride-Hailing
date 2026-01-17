@@ -1,0 +1,61 @@
+@import 'leaflet/dist/leaflet.css';
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.map-container {
+  height: 100vh;
+  width: 100%;
+}
+
+.overlay-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 350px;
+  background: white;
+  z-index: 1000;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.status-badge {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.status-REQUESTED {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-ACCEPTED {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-COMPLETED {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
