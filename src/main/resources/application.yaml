@@ -1,7 +1,6 @@
 spring:
   application:
     name: ride
-  api-key: ${RIDE_API_KEY:test-secret-key}
   
   # Database Configuration 
   datasource:
@@ -38,5 +37,12 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
+ride:
+  api-key: ${RIDE_API_KEY:secret_api_key_123}
+
 server:
   port: 8080
+
+logging:
+  file:
+    name: backend_debug.log
