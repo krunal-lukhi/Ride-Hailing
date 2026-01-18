@@ -62,11 +62,15 @@ public class DriverService {
             return results.getContent().stream()
                     .map(geoResult -> {
                         Point point = geoResult.getContent().getPoint();
+                        if (point == null) {
+                            return null;
+                        }
                         LocationDTO dto = new LocationDTO();
                         dto.setLatitude(point.getY());
                         dto.setLongitude(point.getX());
                         return dto;
                     })
+                    .filter(java.util.Objects::nonNull)
                     .toList();
         } catch (Exception e) {
             log.error("Error finding nearby drivers", e);
